@@ -36,7 +36,7 @@ end
 
 local function givePumpkinTool()
 	local pumpkinTool = Instance.new("Tool")
-	pumpkinTool.Name = "[Rainbow] Watermelon [3.1kg]"
+	pumpkinTool.Name = "[Rainbow] Pumpkin [3.1kg]"
 	pumpkinTool.RequiresHandle = true
 
 	local handle = Instance.new("Part")
@@ -118,7 +118,7 @@ local function spawnWatermelon(position, isBigVersion)
 end
 
 local tool = Instance.new("Tool")
-tool.Name = "Rainbow Super Seed [x1]"
+tool.Name = "Super Seed [x1]"
 tool.RequiresHandle = true
 tool.CanBeDropped = false
 
