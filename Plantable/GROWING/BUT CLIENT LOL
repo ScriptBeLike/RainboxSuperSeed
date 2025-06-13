@@ -1,0 +1,178 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+local rainbowParts = {}
+local colors = {
+	Color3.fromRGB(255, 0, 0),
+	Color3.fromRGB(255, 165, 0),
+	Color3.fromRGB(255, 255, 0),
+	Color3.fromRGB(0, 255, 0),
+	Color3.fromRGB(0, 127, 255),
+	Color3.fromRGB(139, 0, 255),
+	Color3.fromRGB(255, 0, 255),
+}
+local colorIndex = 1
+local colorTime = 0.3
+
+task.spawn(function()
+	while true do
+		colorIndex = (colorIndex % #colors) + 1
+		for _, part in ipairs(rainbowParts) do
+			if part and part:IsDescendantOf(workspace) then
+				local tween = TweenService:Create(part, TweenInfo.new(colorTime), {Color = colors[colorIndex]})
+				tween:Play()
+			end
+		end
+		task.wait(colorTime)
+	end
+end)
+
+local function registerRainbowPart(part)
+	table.insert(rainbowParts, part)
+end
+
+local function givePumpkinTool()
+	local pumpkinTool = Instance.new("Tool")
+	pumpkinTool.Name = "[Rainbow] Watermelon [3.1kg]"
+	pumpkinTool.RequiresHandle = true
+
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(1.5, 1.5, 1.5)
+	handle.Anchored = false
+	handle.CanCollide = false
+	handle.MaterialVariant = "Studs"
+	handle.BrickColor = BrickColor.new("Really red")
+	handle.Parent = pumpkinTool
+
+	pumpkinTool.Grip = CFrame.Angles(0, math.rad(90), 0)
+	handle.Parent = pumpkinTool
+	pumpkinTool.Parent = player.Backpack
+
+	registerRainbowPart(handle)
+end
+
+local function spawnWatermelon(position, isBigVersion)
+	local function createPart(size, offset, parent)
+		local part = Instance.new("Part")
+		part.Anchored = true
+		part.CanCollide = true
+		part.Size = size
+		part.Position = position + offset
+		part.MaterialVariant = "Studs"
+		part.Color = colors[colorIndex]
+		part.Parent = parent or workspace
+		registerRainbowPart(part)
+		return part
+	end
+
+	local base = createPart(Vector3.new(2, 0.3, 1), Vector3.new(0, 0.15, 0))
+
+	local isBig = isBigVersion or math.random() > 0.5
+	local heightOffset = isBig and 2.4 or 1.5
+
+	task.delay(10, function()
+		local vertical = createPart(Vector3.new(0.3, heightOffset, 0.3), Vector3.new(0, heightOffset / 2 + 0.3, 0))
+		local horizontal = createPart(Vector3.new(1.5, 0.3, 0.3), Vector3.new(-0.6, heightOffset + 0.15, 0))
+	end)
+
+	task.delay(20, function()
+		local melon = Instance.new("Part")
+		melon.Anchored = true
+		melon.CanCollide = true
+		melon.MaterialVariant = "Studs"
+		local sizeScale = isBigVersion and math.random(4, 6) or 1.5
+		melon.Size = Vector3.new(sizeScale, sizeScale, sizeScale)
+		melon.Position = position + Vector3.new(-1.2, heightOffset + (sizeScale / 2), 0)
+		melon.Color = colors[colorIndex]
+		melon.Name = "Melon"
+		melon.Parent = workspace
+
+		registerRainbowPart(melon)
+
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.Name = "Collect"
+		prompt.ActionText = "Collect"
+		prompt.ObjectText = ""
+		prompt.KeyboardKeyCode = Enum.KeyCode.E
+		prompt.HoldDuration = 0
+		prompt.MaxActivationDistance = 10
+		prompt.Style = Enum.ProximityPromptStyle.Default
+		prompt.RequiresLineOfSight = false
+		prompt.UIOffset = Vector2.new(0, -20)
+		prompt.Parent = melon
+
+		prompt.Triggered:Connect(function()
+			if melon and melon:IsDescendantOf(workspace) then
+				melon:Destroy()
+				givePumpkinTool()
+				task.delay(10, function()
+					spawnWatermelon(position, true)
+				end)
+			end
+		end)
+	end)
+end
+
+local tool = Instance.new("Tool")
+tool.Name = "Rainbow Super Seed [x1]"
+tool.RequiresHandle = true
+tool.CanBeDropped = false
+
+local handleModel = ReplicatedStorage:WaitForChild("Seed_Models"):WaitForChild("Super"):Clone()
+handleModel.Name = "Handle"
+handleModel.Anchored = false
+handleModel.CanCollide = false
+handleModel.Parent = tool
+
+tool.Parent = player:WaitForChild("Backpack")
+
+local isEquipped = false
+
+tool.Equipped:Connect(function()
+	isEquipped = true
+
+	mouse.Button1Down:Connect(function()
+		if not isEquipped then return end
+
+		local target = mouse.Target
+		if target and target.Name == "Can_Plant" then
+			local clickPosition = mouse.Hit.Position
+
+			local cylinder = Instance.new("Part")
+			cylinder.Shape = Enum.PartType.Cylinder
+			cylinder.Size = Vector3.new(0.1, 1.7555971145629883, 1.7555971145629883)
+			cylinder.Anchored = true
+			cylinder.CanCollide = false
+			cylinder.Color = Color3.fromRGB(106, 57, 9)
+			cylinder.MaterialVariant = "Studs"
+			cylinder.Transparency = 1
+			cylinder.CFrame = CFrame.new(clickPosition) * CFrame.Angles(0, 0, math.rad(90))
+			cylinder.Parent = workspace
+
+			local fadeIn = TweenService:Create(cylinder, TweenInfo.new(0.5), {Transparency = 0})
+			fadeIn:Play()
+
+			local fadeOut = TweenService:Create(cylinder, TweenInfo.new(5), {Transparency = 1})
+			fadeIn.Completed:Connect(function()
+				fadeOut:Play()
+			end)
+
+			fadeOut.Completed:Connect(function()
+				if cylinder then cylinder:Destroy() end
+				spawnWatermelon(clickPosition)
+			end)
+
+			task.delay(0.02, function()
+				if tool then tool:Destroy() end
+			end)
+		end
+	end)
+end)
+
+tool.Unequipped:Connect(function()
+	isEquipped = false
+end)
